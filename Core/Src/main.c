@@ -187,13 +187,13 @@ void TareaPrior(void *p)
 	static int Prioridad=0;
 	static int estado=1;
 	unsigned long Random;
-
+	static int SetOutput=0;
 	while(1)
 	{
 		switch(estado)//Maquina de estados Pulsador
 		{
 		case 1:
-			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == pdPASS)
+			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == GPIO_PIN_SET)
 			{
 				ticks_start=xTaskGetTickCount();
 				estado=2;
@@ -214,19 +214,23 @@ void TareaPrior(void *p)
 				if(Prioridad == 4)//Genero el numero random si es el caso 4
 				{
 					Random=xor128();
-					Random=Random && 0x00000003;
+					Random=Random & 0x00000003;
 				}
 			}
 			else
 			{
 				Prioridad=0;
 			}
+			SetOutput=1;
 			estado=1;
 			break;
 		default:
 			estado=1;
 			break;
 		}
+		if(SetOutput == 1)
+		{
+		SetOutput=0;
 		switch(Prioridad)//Lógica de salida Prioridad
 		{
 		case 0:
@@ -250,7 +254,7 @@ void TareaPrior(void *p)
 			vTaskPrioritySet( xHandleLed3, tskIDLE_PRIORITY + 2);
 			break;
 		case 4:
-			if(Random == 1 && Random == 0)
+			if(Random == 1 || Random == 0)
 			{
 				vTaskPrioritySet( xHandleLed1, tskIDLE_PRIORITY + 2);
 				vTaskPrioritySet( xHandleLed2, tskIDLE_PRIORITY + 1);
@@ -272,6 +276,7 @@ void TareaPrior(void *p)
 		default:
 			Prioridad=0;
 			break;
+		}
 		}
 	vTaskDelay(1);//Si no asigno demora, nunca llega a ejecutar ninguna de las otras tareas por que esta tarea siempre va a estar disponible
 	}
